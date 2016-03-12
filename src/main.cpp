@@ -1,12 +1,12 @@
-#include <rte_config.h>
-#include <rte_eal.h>
-#include <rte_common.h>
+#include <glog/logging.h>
+#include "packet_manager.h"
 
 int main(int argc, char *argv[]) {
-  auto ret = rte_eal_init(argc, argv);
-  if (ret < 0) {
-    rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
-  }
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
+  PacketManager packet_manager;
+  packet_manager.Initialize(&argc, &argv);
 
   return 0;
 }

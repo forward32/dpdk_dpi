@@ -19,6 +19,7 @@ class PortManager {
   PortManager &operator=(PortManager &&) = delete;
 
   void Initialize();
+  std::shared_ptr<PortBase> GetPort(const unsigned) const;
 
  protected:
   void InitializePort(const uint8_t, const unsigned) const;

@@ -14,6 +14,7 @@ class PacketManager {
   PacketManager &operator=(PacketManager &&) = delete;
 
   void Initialize(int *, char **[]);
+  void RunProcessing();
 
  private:
   PortManager port_manager_;

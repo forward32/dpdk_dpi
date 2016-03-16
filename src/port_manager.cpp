@@ -34,19 +34,25 @@ void PortManager::Initialize() {
     if (mempools_.find(socket_id) == mempools_.end()) {
       rte_mempool *mp = rte_pktmbuf_pool_create(kMEMPOOL_NAME, kNB_MBUF, kCACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, socket_id);
       if (!mp) {
-        rte_exit(EXIT_FAILURE, "Can't create mempool for each socket\n");
+        rte_exit(EXIT_FAILURE, "Can't create mempool for socket_id=%d\n", (uint16_t)socket_id);
       }
       mempools_.emplace(socket_id, mp);
       LOG(INFO) << "Mempool for socket_id=" << (uint16_t)socket_id << " allocated";
     }
 
     InitializePort(i, socket_id);
-    LOG(INFO) << "Port " << (uint16_t)i << " initialized";
 
-    ports_.emplace(i, std::make_shared<PortBase>(i));
+    ports_.emplace(lcore_id, std::make_shared<PortBase>(i));
+    LOG(INFO) << "Port mapping: port_id=" << (uint16_t)i << "->lcore_id=" << (uint16_t)lcore_id;
+
+    ++lcore_id;
   }
 
   CheckPortsLinkStatus(nb_ports);
+}
+
+std::shared_ptr<PortBase> PortManager::GetPort(const unsigned lcore_id) const {
+  return ports_.at(lcore_id);
 }
 
 void PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id) const {
@@ -110,7 +116,7 @@ void PortManager::CheckPortsLinkStatus(const uint8_t nb_ports) const {
       }
     }
 
-    if  (show_flag) {
+    if (show_flag) {
       break;
     }
 

@@ -42,7 +42,7 @@ void PortManager::Initialize() {
 
     InitializePort(i, socket_id);
 
-    ports_.emplace(lcore_id, std::make_shared<PortBase>(i));
+    ports_.emplace(lcore_id, std::make_shared<PortEthernet>(i));
     LOG(INFO) << "Port mapping: port_id=" << (uint16_t)i << "->lcore_id=" << (uint16_t)lcore_id;
 
     ++lcore_id;

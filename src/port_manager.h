@@ -20,6 +20,7 @@ class PortManager {
 
   void Initialize();
   std::shared_ptr<PortBase> GetPort(const unsigned) const;
+  PortQueue *GetPortTxQueue(const unsigned, const uint8_t);
 
  protected:
   void InitializePort(const uint8_t, const unsigned) const;
@@ -28,6 +29,7 @@ class PortManager {
  private:
   std::unordered_map<unsigned, rte_mempool *> mempools_;
   std::unordered_map<unsigned, std::shared_ptr<PortBase>> ports_;
+  PortQueue port_tx_table_[RTE_MAX_LCORE][RTE_MAX_ETHPORTS];
 };
 
 #endif // PORT_MANAGER_

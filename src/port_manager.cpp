@@ -55,6 +55,10 @@ std::shared_ptr<PortBase> PortManager::GetPort(const unsigned lcore_id) const {
   return ports_.at(lcore_id);
 }
 
+PortQueue *PortManager::GetPortTxQueue(const unsigned lcore_id, const uint8_t port_id) {
+  return &port_tx_table_[lcore_id][port_id];
+}
+
 void PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id) const {
   rte_eth_conf port_conf{};
   // Tune rx

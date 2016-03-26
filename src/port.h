@@ -5,6 +5,16 @@
 #include <rte_config.h>
 #include <rte_mbuf.h>
 
+#define MAX_PKTS_IN_QUEUE 32
+
+struct PortQueue {
+  PortQueue() : count_(0) {}
+
+  uint16_t count_;
+  rte_mbuf *queue_[MAX_PKTS_IN_QUEUE];
+};
+
+
 class PortBase {
  public:
   explicit PortBase(const uint8_t);
@@ -15,9 +25,11 @@ class PortBase {
   PortBase(PortBase &&) = delete;
   PortBase &operator=(PortBase &&) = delete;
 
-  virtual void SendOnePacket(rte_mbuf *) = 0;
-  virtual void SendAllPackets() = 0;
-  virtual uint16_t ReceivePackets(rte_mbuf **) = 0;
+  virtual void SendOnePacket(rte_mbuf *, PortQueue *) = 0;
+  virtual void SendAllPackets(PortQueue *) = 0;
+  virtual void ReceivePackets(PortQueue *) = 0;
+
+  uint8_t GetPortId() const;
 
  private:
   uint8_t port_id_;
@@ -35,9 +47,9 @@ class PortEthernet : public PortBase {
   PortEthernet (PortEthernet &&) = delete;
   PortEthernet &operator=(PortEthernet &&) = delete;
 
-  virtual void SendOnePacket(rte_mbuf *) override;
-  virtual void SendAllPackets() override;
-  virtual uint16_t ReceivePackets(rte_mbuf **) override;
+  virtual void SendOnePacket(rte_mbuf *, PortQueue *) override;
+  virtual void SendAllPackets(PortQueue *) override;
+  virtual void ReceivePackets(PortQueue *) override;
 };
 
 #endif // PORT_

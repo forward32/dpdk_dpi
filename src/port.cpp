@@ -21,6 +21,10 @@ void PortEthernet::SendOnePacket(rte_mbuf *m, PortQueue *queue) {
 }
 
 void PortEthernet::SendAllPackets(PortQueue *queue) {
+  if (queue->count_ == 0) {
+    return;
+  }
+
   uint16_t sended = 0;
   while (sended != queue->count_) {
     auto ret = rte_eth_tx_burst(GetPortId(), 0, queue->queue_ + sended, queue->count_ - sended);

@@ -20,12 +20,12 @@ include_directories(
 link_directories($ENV{RTE_SDK}/${DPDK_RTE_TARGET}/lib)
 
 set(DPDK_DRIVERS
-  "-lrte_pmd_vmxnet3_uio"
+  "-lrte_pmd_vmxnet3_uio -lrte_pmd_pcap"
   )
 
 set(DPDK_LIBS
   "-Wl,--whole-archive"
-  "-lrte_eal -lrte_mempool -lrte_mbuf -lrte_ring -lethdev ${DPDK_DRIVERS}"
+  "-lrte_eal -lrte_mempool -lrte_mbuf -lrte_ring -lethdev -lrte_kvargs ${DPDK_DRIVERS}"
   "-Wl,--no-whole-archive"
   )
 
@@ -36,4 +36,4 @@ add_definitions(-mssse3)
 
 add_executable(${PRJ} ${SOURCES})
 target_link_libraries(${PRJ} ${DPDK_LIBS})
-target_link_libraries(${PRJ} pthread dl glog)
+target_link_libraries(${PRJ} pthread dl glog pcap)

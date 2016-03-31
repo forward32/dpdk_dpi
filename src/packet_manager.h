@@ -16,6 +16,9 @@ class PacketManager {
   void Initialize(int *, char **[]);
   void RunProcessing();
 
+ protected:
+  void ProcessPackets(PortQueue *);
+
  private:
   PortManager port_manager_;
 };

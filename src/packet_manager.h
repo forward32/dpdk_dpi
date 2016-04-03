@@ -14,7 +14,7 @@ class PacketManager {
   PacketManager(PacketManager &&) = delete;
   PacketManager &operator=(PacketManager &&) = delete;
 
-  void Initialize(int *, char **[]);
+  bool Initialize();
   void RunProcessing();
 
  protected:

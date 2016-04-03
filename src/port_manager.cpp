@@ -13,7 +13,7 @@
 #define kNB_RXD 128
 #define kNB_TXD 512
 
-void PortManager::Initialize() {
+bool PortManager::Initialize() {
   auto nb_ports = rte_eth_dev_count();
   LOG(INFO) << "Number of ports: " << (uint16_t)nb_ports;
 
@@ -26,7 +26,8 @@ void PortManager::Initialize() {
     while (!rte_lcore_is_enabled(lcore_id) || lcore_id == master_lcore) {
       lcore_id = rte_get_next_lcore(lcore_id, true, false);
       if (lcore_id >= RTE_MAX_LCORE) {
-        rte_exit(EXIT_FAILURE, "Can't find core for each port\n");
+        LOG(ERROR) << "Can't find core for each port";
+        return false;
       }
     }
 
@@ -34,13 +35,16 @@ void PortManager::Initialize() {
     if (mempools_.find(socket_id) == mempools_.end()) {
       rte_mempool *mp = rte_pktmbuf_pool_create(kMEMPOOL_NAME, kNB_MBUF, kCACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, socket_id);
       if (!mp) {
-        rte_exit(EXIT_FAILURE, "Can't create mempool for socket_id=%d\n", (uint16_t)socket_id);
+        LOG(ERROR) << "Can't create mempool for socket_id=" << (uint16_t)socket_id;
+        return false;
       }
       mempools_.emplace(socket_id, mp);
       LOG(INFO) << "Mempool for socket_id=" << (uint16_t)socket_id << " allocated";
     }
 
-    InitializePort(i, socket_id);
+    if (!InitializePort(i, socket_id)) {
+      return false;
+    }
 
     ports_.emplace(lcore_id, std::make_shared<PortEthernet>(i));
     LOG(INFO) << "Port mapping: port_id=" << (uint16_t)i << "->lcore_id=" << (uint16_t)lcore_id;
@@ -49,6 +53,8 @@ void PortManager::Initialize() {
   }
 
   CheckPortsLinkStatus(nb_ports);
+
+  return true;
 }
 
 std::shared_ptr<PortBase> PortManager::GetPort(const unsigned lcore_id) const {
@@ -64,7 +70,7 @@ PortQueue *PortManager::GetPortTxQueue(const unsigned lcore_id, const uint8_t po
   return &port_tx_table_[lcore_id][port_id];
 }
 
-void PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id) const {
+bool PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id) const {
   rte_eth_conf port_conf{};
   // Tune rx
   port_conf.rxmode.mq_mode = ETH_MQ_RX_RSS;
@@ -74,26 +80,32 @@ void PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id
   port_conf.txmode.mq_mode = ETH_MQ_TX_NONE;
   auto ret = rte_eth_dev_configure(port_id, kNB_RX, kNB_TX, &port_conf);
   if (ret < 0) {
-    rte_exit(EXIT_FAILURE, "Can't configure port %d, error=%d\n", (uint16_t)port_id, ret);
+    LOG(ERROR) << "Can't configure port " << (uint16_t)port_id << ", error=" << ret;
+    return false;
   }
 
   rte_mempool *mp = mempools_.at(socket_id);
   assert(mp != nullptr);
   ret = rte_eth_rx_queue_setup(port_id, 0, kNB_RXD, socket_id, nullptr, mp);
   if (ret < 0) {
-    rte_exit(EXIT_FAILURE, "Can't setup rx-queue for port %d, error=%d\n", (uint16_t)port_id, ret);
+    LOG(ERROR) << "Can't setup rx-queue for port " << (uint16_t)port_id << ", error=" << ret;
+    return false;
   }
   ret = rte_eth_tx_queue_setup(port_id, 0, kNB_TXD, socket_id, nullptr);
   if (ret < 0) {
-    rte_exit(EXIT_FAILURE, "Can't setup tx-queue for port %d, error=%d\n", (uint16_t)port_id, ret);
+    LOG(ERROR) << "Can't setup tx-queue for port " << (uint16_t)port_id << ", error=" << ret;
+    return false;
   }
 
   ret = rte_eth_dev_start(port_id);
   if (ret < 0) {
-    rte_exit(EXIT_FAILURE, "Can't start port %d, error=%d\n", (uint16_t)port_id, ret);
+    LOG(ERROR) << "Can't start port " << (uint16_t)port_id << ", error=" << ret;
+    return false;
   }
 
   rte_eth_promiscuous_enable(port_id);
+
+  return true;
 }
 
 void PortManager::CheckPortsLinkStatus(const uint8_t nb_ports) const {

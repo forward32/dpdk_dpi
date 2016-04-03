@@ -1,8 +1,5 @@
 #include <atomic>
 #include <cassert>
-#include <rte_config.h>
-#include <rte_eal.h>
-#include <rte_common.h>
 #include <rte_cycles.h>
 #include <glog/logging.h>
 #include "packet_manager.h"
@@ -15,22 +12,16 @@ extern std::atomic<bool> terminated;
 PacketManager::PacketManager(const std::string &config_name) : config_(config_name) {
 }
 
-void PacketManager::Initialize(int *argc, char **argv[]) {
-  auto ret = rte_eal_init(*argc, *argv);
-  if (ret < 0) {
-    rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
-  }
-  *argc -= ret;
-  *argv += ret;
-
-  rte_config *cfg = rte_eal_get_configuration();
-  LOG(INFO) << "Number of logical cores: " << cfg->lcore_count;
-
+bool PacketManager::Initialize() {
   if (!config_.Initialize()) {
-    rte_exit(EXIT_FAILURE, "Can't initialize config\n");
+    return false;
   }
 
-  port_manager_.Initialize();
+  if (!port_manager_.Initialize()) {
+    return false;
+  }
+
+  return true;
 }
 
 void PacketManager::RunProcessing() {

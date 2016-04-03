@@ -24,9 +24,26 @@ int main(int argc, char *argv[]) {
   terminated.store(false, std::memory_order_relaxed);
   signal(SIGINT, sigint_handler);
 
-  const std::string config_name = "test_config.txt";
+  auto ret = rte_eal_init(argc, argv);
+  if (ret < 0) {
+    rte_exit(EXIT_FAILURE, "Invalid EAL parameters\n");
+  }
+
+  rte_config *cfg = rte_eal_get_configuration();
+  LOG(INFO) << "Number of logical cores: " << cfg->lcore_count;
+
+  argc -= ret;
+  argv += ret;
+  // first - binary name
+  if (argc < 2) {
+    rte_exit(EXIT_FAILURE, "Config file not specified\n");
+  }
+
+  const std::string config_name = argv[1];
   PacketManager packet_manager(config_name);
-  packet_manager.Initialize(&argc, &argv);
+  if (!packet_manager.Initialize()) {
+    rte_exit(EXIT_FAILURE, "Can't initialize packet manager\n");
+  }
 
   rte_eal_mp_remote_launch(launch_lcore, (void *)(&packet_manager), SKIP_MASTER);
 

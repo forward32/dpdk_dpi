@@ -18,12 +18,12 @@ class PortManager {
   PortManager(PortManager &&) = delete;
   PortManager &operator=(PortManager &&) = delete;
 
-  void Initialize();
+  bool Initialize();
   std::shared_ptr<PortBase> GetPort(const unsigned) const;
   PortQueue *GetPortTxQueue(const unsigned, const uint8_t);
 
  protected:
-  void InitializePort(const uint8_t, const unsigned) const;
+  bool InitializePort(const uint8_t, const unsigned) const;
   void CheckPortsLinkStatus(const uint8_t) const;
 
  private:

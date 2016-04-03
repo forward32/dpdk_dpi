@@ -16,17 +16,15 @@ static std::unordered_map<std::string, uint8_t> protocol_map = {
 };
 
 enum action_type: uint8_t {
-  DROP,
   PUSH_VLAN,
   PUSH_MPLS,
   OUTPUT
 };
 
 static std::unordered_map<uint8_t, uint8_t> action_priority = {
-  {DROP, 1},
-  {PUSH_VLAN, 2},
-  {PUSH_MPLS, 3},
-  {OUTPUT, 4},
+  {PUSH_VLAN, 1},
+  {PUSH_MPLS, 2},
+  {OUTPUT, 3},
 };
 
 #endif // COMMON_

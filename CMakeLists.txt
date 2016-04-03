@@ -8,6 +8,7 @@ set(SOURCES
   src/packet_manager.cpp
   src/port_manager.cpp
   src/port.cpp
+  src/config.cpp
   )
 
 set(DPDK_RTE_TARGET x86_64-native-linuxapp-gcc)

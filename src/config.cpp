@@ -93,10 +93,9 @@ bool Config::ParsePortAndProtocol(uint16_t &rule_key, std::string &str) {
 }
 
 bool Config::ParseActions(Actions &actions, std::string &str) {
-  static const std::string drop_action_s = "DROP";
-  static const std::string push_vlan_action_s = "PUSH_VLAN(";
-  static const std::string push_mpls_action_s = "PUSH_MPLS(";
-  static const std::string output_action_s = "OUTPUT(";
+  static const std::string push_vlan_prefix = "PUSH_VLAN(";
+  static const std::string push_mpls_prefix = "PUSH_MPLS(";
+  static const std::string output_prefix = "OUTPUT(";
 
   // Small trick
   if (str.length() > 0) {
@@ -109,31 +108,19 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
     action_s.erase(std::remove(action_s.begin(), action_s.end(), ' '), action_s.end());
     auto action_s_len = action_s.length();
 
-    if (action_s.find(drop_action_s) != std::string::npos) {
-      if (action_s_len != drop_action_s.length()) {
-        LOG(ERROR) << "Invalid drop action, value=" << action_s;
-        return false;
-      }
-      DropAction *drop_action = new DropAction;
-      drop_action->type = DROP;
-      Action *action = reinterpret_cast<Action*>(drop_action);
-      actions.push_back(std::shared_ptr<Action>(action));
-      DLOG(INFO) << "Action DROP";
+    if (action_s.find(push_vlan_prefix) != std::string::npos) {
     }
 
-    else if (action_s.find(push_vlan_action_s) != std::string::npos) {
+    else if (action_s.find(push_mpls_prefix) != std::string::npos) {
     }
 
-    else if (action_s.find(push_mpls_action_s) != std::string::npos) {
-    }
-
-    else if (action_s.find(output_action_s) != std::string::npos) {
-      auto output_action_s_len = output_action_s.length();
-      if (action_s.substr(0, output_action_s_len) != output_action_s || action_s[action_s_len-1] != ')') {
+    else if (action_s.find(output_prefix) != std::string::npos) {
+      auto output_prefix_len = output_prefix.length();
+      if (action_s.substr(0, output_prefix_len) != output_prefix || action_s[action_s_len-1] != ')') {
         LOG(ERROR) << "Invalid output action, value=" << action_s;
         return false;
       }
-      std::string port_id_s = action_s.substr(output_action_s_len, action_s_len-output_action_s_len-1);
+      std::string port_id_s = action_s.substr(output_prefix_len, action_s_len-output_prefix_len-1);
       uint8_t port_id;
       try {
         size_t end_pos;

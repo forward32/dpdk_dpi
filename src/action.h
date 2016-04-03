@@ -7,10 +7,6 @@ struct Action {
   action_type type;
 };
 
-struct DropAction {
-  action_type type;
-};
-
 struct PushVlanAction {
   action_type type;
   uint16_t tpid;

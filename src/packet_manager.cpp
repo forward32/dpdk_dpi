@@ -12,6 +12,9 @@ extern std::atomic<bool> terminated;
 #define TIMER_MILLISECOND 2000000ULL /* around 1ms at 2 Ghz */
 #define BURST_TX_DRAIN_US 100 /* TX drain every ~100us */
 
+PacketManager::PacketManager(const std::string &config_name) : config_(config_name) {
+}
+
 void PacketManager::Initialize(int *argc, char **argv[]) {
   auto ret = rte_eal_init(*argc, *argv);
   if (ret < 0) {
@@ -22,6 +25,10 @@ void PacketManager::Initialize(int *argc, char **argv[]) {
 
   rte_config *cfg = rte_eal_get_configuration();
   LOG(INFO) << "Number of logical cores: " << cfg->lcore_count;
+
+  if (!config_.Initialize()) {
+    rte_exit(EXIT_FAILURE, "Can't initialize config\n");
+  }
 
   port_manager_.Initialize();
 }
@@ -34,7 +41,10 @@ void PacketManager::RunProcessing() {
 
   auto lcore_id = rte_lcore_id();
   auto port = port_manager_.GetPort(lcore_id);
-  assert(port != nullptr);
+  if (!port) {
+    LOG(WARNING) << "No task for lcore_id=" << (uint16_t)lcore_id;
+    return;
+  }
   auto port_id = port->GetPortId();
   auto tx_queue = port_manager_.GetPortTxQueue(lcore_id, port_id);
   assert(tx_queue != nullptr);

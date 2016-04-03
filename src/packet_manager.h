@@ -2,10 +2,11 @@
 #define PACKET_MANAGER_
 
 #include "port_manager.h"
+#include "config.h"
 
 class PacketManager {
  public:
-  PacketManager() = default;
+  explicit PacketManager(const std::string &);
   ~PacketManager() = default;
 
   PacketManager(const PacketManager &) = delete;
@@ -20,6 +21,7 @@ class PacketManager {
   void ProcessPackets(PortQueue *);
 
  private:
+  Config config_;
   PortManager port_manager_;
 };
 

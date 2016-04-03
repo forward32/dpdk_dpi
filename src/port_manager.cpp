@@ -52,7 +52,12 @@ void PortManager::Initialize() {
 }
 
 std::shared_ptr<PortBase> PortManager::GetPort(const unsigned lcore_id) const {
-  return ports_.at(lcore_id);
+  try {
+    return ports_.at(lcore_id);
+  }
+  catch (const std::out_of_range &err) {
+    return std::shared_ptr<PortBase>();
+  }
 }
 
 PortQueue *PortManager::GetPortTxQueue(const unsigned lcore_id, const uint8_t port_id) {

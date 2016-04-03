@@ -24,7 +24,8 @@ int main(int argc, char *argv[]) {
   terminated.store(false, std::memory_order_relaxed);
   signal(SIGINT, sigint_handler);
 
-  PacketManager packet_manager;
+  const std::string config_name = "test_config.txt";
+  PacketManager packet_manager(config_name);
   packet_manager.Initialize(&argc, &argv);
 
   rte_eal_mp_remote_launch(launch_lcore, (void *)(&packet_manager), SKIP_MASTER);

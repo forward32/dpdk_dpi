@@ -13,8 +13,6 @@ extern std::atomic<bool> terminated;
 #define BURST_TX_DRAIN_US 100 /* TX drain every ~100us */
 
 #define ETHER_TYPE_VLAN_8021AD 0x88a8
-#define ETHER_TYPE_MPLS_UNICAST 0x8847
-#define ETHER_TYPE_MPLS_MULTICAST 0x8848
 
 /*
  * Additional functions
@@ -27,30 +25,20 @@ static bool PreparePacket(rte_mbuf *m) {
   // Skip VLAN tags
   while (*eth_type == rte_cpu_to_be_16(ETHER_TYPE_VLAN) ||
          *eth_type == rte_cpu_to_be_16(ETHER_TYPE_VLAN_8021AD)) {
-    DLOG(INFO) << "One more VLAN header skipped";
     eth_type += 2;
     m->l2_len += 4;
   }
   m->l2_len += 2;
 
-  // If it's MPLS packet - skip it
-  if (*eth_type == rte_cpu_to_be_16(ETHER_TYPE_MPLS_UNICAST) ||
-      *eth_type == rte_cpu_to_be_16(ETHER_TYPE_MPLS_MULTICAST)) {
-    DLOG(WARNING) << "There are one or more MPLS headers - not supported";
-    return false;
-  }
-
   // If it's not IP packet - skip it
   uint8_t ip_proto = 0;
   switch (rte_cpu_to_be_16(*eth_type)) {
     case ETHER_TYPE_IPv4: {
-      DLOG(INFO) << "IPv4 packet";
       m->l3_len = sizeof(ipv4_hdr);
       ip_proto = ((ipv4_hdr *)(eth_type + 1))->next_proto_id;
       break;
     }
     case ETHER_TYPE_IPv6: {
-      DLOG(INFO) << "IPv6 packet";
       m->l3_len = sizeof(ipv6_hdr);
       ip_proto = ((ipv6_hdr *)(eth_type + 1))->proto;
       break;
@@ -64,12 +52,10 @@ static bool PreparePacket(rte_mbuf *m) {
   // If it's not TCP or UDP packet - skip it
   switch (ip_proto) {
     case IPPROTO_TCP: {
-      DLOG(INFO) << "TCP packet";
       m->l4_len = sizeof(tcp_hdr);
       break;
     }
     case IPPROTO_UDP: {
-      DLOG(INFO) << "UDP pcaket";
       m->l4_len = sizeof(udp_hdr);
       break;
     }
@@ -136,6 +122,7 @@ void PacketManager::RunProcessing() {
     }
 
     // TODO: print info about link status changing
+    // TODO: print statistics
 
     // Read packets from port rx-queue
     if (link.link_status) {

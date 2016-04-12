@@ -36,5 +36,6 @@ set(CMAKE_CXX_FLAGS
 add_definitions(-mssse3)
 
 add_executable(${PRJ} ${SOURCES})
+add_subdirectory(test)
 target_link_libraries(${PRJ} ${DPDK_LIBS})
 target_link_libraries(${PRJ} pthread dl glog pcap)

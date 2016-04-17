@@ -4,13 +4,14 @@
 #include <unordered_map>
 
 enum protocol_type: uint8_t {
-  FTP,
+  FTP = 0,
   SIP,
   RTP,
-  RTSP
+  RTSP,
+  UNKNOWN,
 };
 
-static std::unordered_map<std::string, uint8_t> protocol_map = {
+static std::unordered_map<std::string, protocol_type> protocol_map = {
   {"FTP", FTP},
   {"SIP", SIP},
   {"RTP", RTP},
@@ -18,7 +19,7 @@ static std::unordered_map<std::string, uint8_t> protocol_map = {
 };
 
 enum action_type: uint8_t {
-  PUSH_VLAN,
+  PUSH_VLAN = 0,
   PUSH_MPLS,
   OUTPUT
 };

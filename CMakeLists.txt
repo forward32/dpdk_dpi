@@ -3,12 +3,9 @@ cmake_minimum_required(VERSION 2.8)
 set(PRJ dpdk-dpi)
 project(${PRJ})
 
-set(SOURCES
-  src/main.cpp
-  src/packet_manager.cpp
-  src/port_manager.cpp
-  src/port.cpp
-  src/config.cpp
+file(GLOB SOURCES
+  src/*.cpp
+  src/protocols/*.cpp
   )
 
 set(DPDK_RTE_TARGET x86_64-native-linuxapp-gcc)
@@ -34,6 +31,12 @@ set(CMAKE_CXX_FLAGS
   "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall"
   )
 add_definitions(-mssse3)
+
+option(DPI_DEBUG "Debug mode (allow asserts, debug messages, etc)" OFF)
+add_definitions(-DNDEBUG)
+if(DPI_DEBUG)
+  remove_definitions (-DNDEBUG)
+endif(DPI_DEBUG)
 
 add_executable(${PRJ} ${SOURCES})
 add_subdirectory(test)

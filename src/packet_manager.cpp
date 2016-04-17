@@ -1,11 +1,13 @@
-#include <atomic>
-#include <cassert>
-#include <glog/logging.h>
-#include "packet_manager.h"
+#include <rte_config.h>
 #include <rte_cycles.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
 #include <rte_udp.h>
+#include <atomic>
+#include <cassert>
+#include <glog/logging.h>
+#include "packet_manager.h"
+#include "packet_analyzer.h"
 
 extern std::atomic<bool> terminated;
 
@@ -135,6 +137,8 @@ void PacketManager::RunProcessing() {
 }
 
 void PacketManager::ProcessPackets(PortQueue *queue) {
+  PacketAnalyzer &analyzer = PacketAnalyzer::Instance();
+
   for (uint16_t i = 0; i < queue->count_; ++i) {
     DLOG(INFO) << "Process single packet at lcore_id=" << (uint16_t)rte_lcore_id();
     auto m = queue->queue_[i];
@@ -142,8 +146,15 @@ void PacketManager::ProcessPackets(PortQueue *queue) {
       DLOG(INFO) << "L2_len=" << m->l2_len;
       DLOG(INFO) << "L3_len=" << m->l3_len;
       DLOG(INFO) << "L4_len=" << m->l4_len;
+
+      auto ret = analyzer.Analyze(m);
+      if (ret != UNKNOWN) {
+        // TODO: execute actions for this protocol type
+        continue;
+      }
     }
     rte_pktmbuf_free(m);
   }
+
   queue->count_ = 0;
 }

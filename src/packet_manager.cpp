@@ -148,10 +148,7 @@ void PacketManager::ProcessPackets(PortQueue *queue) {
       DLOG(INFO) << "L4_len=" << m->l4_len;
 
       auto ret = analyzer.Analyze(m);
-      if (ret != UNKNOWN) {
-        // TODO: execute actions for this protocol type
-        continue;
-      }
+      // TODO: execute actions for this protocol type
     }
     rte_pktmbuf_free(m);
   }

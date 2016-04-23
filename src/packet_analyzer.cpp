@@ -1,11 +1,12 @@
 #include "packet_analyzer.h"
 
 // List of search methods
+extern protocol_type SearchSip(rte_mbuf *);
 extern protocol_type SearchRtp(rte_mbuf *);
 // List end
 
 PacketAnalyzer::PacketAnalyzer() {
-  methods_.push_back(SearchRtp);
+  methods_ = {SearchSip, SearchRtp};
 }
 
 PacketAnalyzer &PacketAnalyzer::Instance() {

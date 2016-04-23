@@ -16,6 +16,7 @@ static std::unordered_map<std::string, protocol_type> protocol_map = {
   {"SIP", SIP},
   {"RTP", RTP},
   {"RTSP", RTSP},
+  {"UNKNOWN", UNKNOWN},
 };
 
 enum action_type: uint8_t {

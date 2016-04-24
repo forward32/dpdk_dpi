@@ -228,6 +228,7 @@ sub get_direct_depend {
 
     elsif (m#\\($include_graphics).*\{([/-\w\d.]+)\}#) {
        $p = $2;
+       next if $p =~ /^pictures\/.*/;
       $p .= '.pdf' unless $p =~ /\.\w+$/;
       push (@figs, $basepath.$p);
        }

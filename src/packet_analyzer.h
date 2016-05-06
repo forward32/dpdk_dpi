@@ -3,8 +3,6 @@
 
 #include <functional>
 #include <vector>
-#include <rte_config.h>
-#include <rte_mbuf.h>
 #include "common.h"
 
 class PacketAnalyzer {

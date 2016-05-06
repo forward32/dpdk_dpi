@@ -1,6 +1,5 @@
-#include <rte_config.h>
-#include <rte_mbuf.h>
 #include "common.h"
+#include <rte_byteorder.h>
 
 protocol_type SearchRtp(rte_mbuf *m) {
   const uint16_t headers_len = m->l2_len + m->l3_len + m->l4_len;
@@ -13,7 +12,7 @@ protocol_type SearchRtp(rte_mbuf *m) {
   // current version is 2
   if (!(payload[0] & 0x80)) return UNKNOWN;
 
-  uint32_t ssrc = ((uint32_t *)(payload))[8];
+  uint32_t ssrc = ((uint32_t *)(payload))[2];
   // ssrc can't be 0
   if (ssrc == 0) return UNKNOWN;
 
@@ -27,9 +26,11 @@ protocol_type SearchRtp(rte_mbuf *m) {
 
   uint8_t extension = payload[0] & 0x10;
   if (extension) {
+    if (payload_len < rtp_min_len + 4) return UNKNOWN;
+
     // profile-specific id
     rtp_min_len += 2;
-    uint16_t extension_len = *(uint16_t *)(payload + rtp_min_len);
+    uint16_t extension_len = 4*rte_cpu_to_be_16(*(uint16_t *)(payload + rtp_min_len));
     // extension header len
     rtp_min_len += 2;
 

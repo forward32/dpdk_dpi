@@ -38,7 +38,5 @@ protocol_type SearchSip(rte_mbuf *m) {
   if (SearchSipMethod(payload, "MESSAGE", "message")) return SIP;
   if (SearchSipMethod(payload, "UPDATE", "update")) return SIP;
 
-  // STUN and others case not supported
-
   return UNKNOWN;
 }

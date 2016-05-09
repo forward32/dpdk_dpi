@@ -3,10 +3,11 @@
 // List of search methods
 extern protocol_type SearchSip(rte_mbuf *);
 extern protocol_type SearchRtp(rte_mbuf *);
+extern protocol_type SearchRtsp(rte_mbuf *);
 // List end
 
 PacketAnalyzer::PacketAnalyzer() {
-  methods_ = {SearchSip, SearchRtp};
+  methods_ = {SearchSip, SearchRtp, SearchRtsp};
 }
 
 PacketAnalyzer &PacketAnalyzer::Instance() {

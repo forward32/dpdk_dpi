@@ -10,6 +10,7 @@ file(GLOB SOURCES
     protocols/*.cpp
 
     ../src/common.cpp
+    ../src/cmd_args.cpp
     ../src/protocols/*.cpp
     )
 

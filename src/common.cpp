@@ -57,3 +57,18 @@ bool PreparePacket(rte_mbuf *m) {
 
   return true;
 }
+
+bool ParseInt(const std::string &str, unsigned long &ret) {
+  try {
+    size_t end_pos;
+    ret = std::stoul(str.c_str(), &end_pos, 10);
+    if (end_pos != str.length()) {
+      return false;
+    }
+  }
+  catch (const std::logic_error &err) {
+    return false;
+  }
+
+  return true;
+}

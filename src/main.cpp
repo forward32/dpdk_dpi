@@ -2,6 +2,7 @@
 #include <atomic>
 #include <csignal>
 #include "packet_manager.h"
+#include "cmd_args.h"
 
 std::atomic<bool> terminated;
 
@@ -34,13 +35,9 @@ int main(int argc, char *argv[]) {
 
   argc -= ret;
   argv += ret;
-  // first - binary name
-  if (argc < 2) {
-    rte_exit(EXIT_FAILURE, "Config file not specified\n");
-  }
+  CmdArgs cmd_args = ParseArgs(argc, argv); // may throw
 
-  const std::string config_name = argv[1];
-  PacketManager packet_manager(config_name);
+  PacketManager packet_manager(cmd_args.config_file);
   if (!packet_manager.Initialize()) {
     rte_exit(EXIT_FAILURE, "Can't initialize packet manager\n");
   }

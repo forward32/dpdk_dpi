@@ -35,4 +35,6 @@ static std::unordered_map<uint8_t, uint8_t> action_priority = {
 
 bool PreparePacket(rte_mbuf *);
 
+bool ParseInt(const std::string &, unsigned long &);
+
 #endif // COMMON_

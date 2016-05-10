@@ -4,14 +4,16 @@
 #include "port_manager.h"
 
 /* Mempool settings */
-#define kMEMPOOL_NAME "PKT_MEMPOOL"
-#define kNB_MBUF 8192
-#define kCACHE_SIZE 32
+static constexpr auto kMEMPOOL_NAME = "PKT_MEMPOOL";
+static constexpr auto kNB_MBUF = 8192;
+static constexpr auto kCACHE_SIZE = 32;
 /* Queues settings */
-#define kNB_RX 1
-#define kNB_TX 1
-#define kNB_RXD 128
-#define kNB_TXD 512
+static constexpr auto kNB_RX = 1;
+static constexpr auto kNB_TX = 1;
+static constexpr auto kNB_RXD = 128;
+static constexpr auto kNB_TXD = 512;
+
+PortManager::PortManager() : stats_lcore_id_(RTE_MAX_LCORE) {}
 
 bool PortManager::Initialize() {
   auto nb_ports = rte_eth_dev_count();
@@ -52,6 +54,9 @@ bool PortManager::Initialize() {
     ++lcore_id;
   }
 
+  stats_lcore_id_ = --lcore_id; // last slave lcore
+  LOG(INFO) << "Note: lcore_id=" << (uint16_t)lcore_id << " will be used for statistics (if required)";
+
   CheckPortsLinkStatus(nb_ports);
 
   return true;
@@ -68,6 +73,10 @@ std::shared_ptr<PortBase> PortManager::GetPort(const unsigned lcore_id) const {
 
 PortQueue *PortManager::GetPortTxQueue(const unsigned lcore_id, const uint8_t port_id) {
   return &port_tx_table_[lcore_id][port_id];
+}
+
+unsigned PortManager::GetStatsLcoreId() const {
+  return stats_lcore_id_;
 }
 
 bool PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id) const {

@@ -5,13 +5,13 @@
 #include <rte_config.h>
 #include <rte_mbuf.h>
 
-#define MAX_PKTS_IN_QUEUE 32
+static constexpr auto kMAX_PKTS_IN_QUEUE = 32;
 
 struct PortQueue {
   PortQueue() : count_(0) {}
 
   uint16_t count_;
-  rte_mbuf *queue_[MAX_PKTS_IN_QUEUE];
+  rte_mbuf *queue_[kMAX_PKTS_IN_QUEUE];
 };
 
 

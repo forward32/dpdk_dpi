@@ -15,7 +15,7 @@ PortEthernet::PortEthernet(const uint8_t port_id) : PortBase(port_id) {
 void PortEthernet::SendOnePacket(rte_mbuf *m, PortQueue *queue) {
   queue->queue_[queue->count_++] = m;
 
-  if (queue->count_ == MAX_PKTS_IN_QUEUE) {
+  if (queue->count_ == kMAX_PKTS_IN_QUEUE) {
     SendAllPackets(queue);
   }
 }
@@ -44,5 +44,5 @@ void PortEthernet::SendAllPackets(PortQueue *queue) {
 }
 
 void PortEthernet::ReceivePackets(PortQueue *queue) {
-  queue->count_ = rte_eth_rx_burst(GetPortId(), 0, queue->queue_, MAX_PKTS_IN_QUEUE);
+  queue->count_ = rte_eth_rx_burst(GetPortId(), 0, queue->queue_, kMAX_PKTS_IN_QUEUE);
 }

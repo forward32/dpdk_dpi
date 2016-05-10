@@ -8,11 +8,12 @@
 
 extern std::atomic<bool> terminated;
 
-#define TIMER_MILLISECOND 2000000ULL /* around 1ms at 2 Ghz */
-#define BURST_TX_DRAIN_US 100 /* TX drain every ~100us */
+static constexpr auto kTIMER_MILLISECOND = 2000000ULL; /* around 1ms at 2 Ghz */
+static constexpr auto kBURST_TX_DRAIN_US = 100; /* TX drain every ~100us */
 
-PacketManager::PacketManager(const std::string &config_name) : config_(config_name) {
-}
+PacketManager::PacketManager(const std::string &config_name, const uint16_t stats_interval)
+    : config_(config_name),
+      stats_interval_(stats_interval) {}
 
 bool PacketManager::Initialize() {
   if (!config_.Initialize()) {
@@ -27,9 +28,10 @@ bool PacketManager::Initialize() {
 }
 
 void PacketManager::RunProcessing() {
-  static constexpr uint64_t timer_period = TIMER_MILLISECOND * 100;
-  static const uint64_t drain_tsc = (rte_get_tsc_hz() + US_PER_S - 1) / US_PER_S * BURST_TX_DRAIN_US;
-  uint64_t prev_tsc = 0, cur_tsc, diff_tsc, timer_tsc = 0;
+  static constexpr uint64_t timer_period = kTIMER_MILLISECOND * 100;
+  static const uint64_t drain_tsc = (rte_get_tsc_hz() + US_PER_S - 1) / US_PER_S * kBURST_TX_DRAIN_US;
+  static const uint64_t stats_interval_tsc = stats_interval_ * 1000 *kTIMER_MILLISECOND;
+  uint64_t prev_tsc = rte_rdtsc(), cur_tsc, diff_tsc, timer_tsc = 0, timer_stats_tsc = 0;
   rte_eth_link link;
 
   auto lcore_id = rte_lcore_id();
@@ -42,6 +44,7 @@ void PacketManager::RunProcessing() {
   auto tx_queue = port_manager_.GetPortTxQueue(lcore_id, port_id);
   assert(tx_queue != nullptr);
   PortQueue rx_queue;
+  auto lcore_stats_id = port_manager_.GetStatsLcoreId();
   LOG(INFO) << "Processing at lcore_id=" << (uint16_t)lcore_id << " started";
 
   while(!terminated.load(std::memory_order_relaxed)) {
@@ -58,10 +61,20 @@ void PacketManager::RunProcessing() {
         rte_eth_link_get_nowait(port->GetPortId(), &link);
         timer_tsc = 0;
       }
+
+      // Print statistics
+      if (stats_interval_tsc > 0) {
+        if (lcore_id == lcore_stats_id) {
+          timer_stats_tsc += diff_tsc;
+          if (timer_stats_tsc > stats_interval_tsc) {
+            PrintStats();
+            timer_stats_tsc = 0;
+          }
+        }
+      }
     }
 
     // TODO: print info about link status changing
-    // TODO: print statistics
 
     // Read packets from port rx-queue
     if (link.link_status) {
@@ -91,4 +104,21 @@ void PacketManager::ProcessPackets(PortQueue *queue) {
   }
 
   queue->count_ = 0;
+}
+
+void PacketManager::PrintStats() const {
+  std::ostringstream os;
+  os << "\n=====Statistcics=====\n";
+
+  auto nb_ports = rte_eth_dev_count();
+  rte_eth_stats stats;
+  for (uint8_t i = 0; i < nb_ports; ++i) {
+    rte_eth_stats_get(i, &stats);
+    os << "port_id=" << (uint16_t)i << "\n";
+    os << " - Pkts in: " << stats.ipackets << "\n";
+    os << " - Pkts out: " << stats.opackets << "\n";
+  }
+
+  os << "====================\n";
+  LOG(INFO) << os.str();
 }

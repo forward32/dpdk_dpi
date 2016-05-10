@@ -1,7 +1,5 @@
 NECESSARILY:
-1) Unit-tests for config
-   Unit-tests for RTP
-2) Statistics.
+1) Unit-tests for config.
 3) Check with valgrind(memory leaks).
 
 IN FUTURE:

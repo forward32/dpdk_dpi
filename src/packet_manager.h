@@ -6,7 +6,7 @@
 
 class PacketManager {
  public:
-  explicit PacketManager(const std::string &);
+  PacketManager(const std::string &, const uint16_t);
   ~PacketManager() = default;
 
   PacketManager(const PacketManager &) = delete;
@@ -19,10 +19,12 @@ class PacketManager {
 
  protected:
   void ProcessPackets(PortQueue *);
+  void PrintStats() const;
 
  private:
   Config config_;
   PortManager port_manager_;
+  uint16_t stats_interval_;
 };
 
 #endif // PACKET_MANAGER_

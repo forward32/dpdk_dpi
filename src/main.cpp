@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
   argv += ret;
   CmdArgs cmd_args = ParseArgs(argc, argv); // may throw
 
-  PacketManager packet_manager(cmd_args.config_file);
+  PacketManager packet_manager(cmd_args.config_file, cmd_args.stats_interval);
   if (!packet_manager.Initialize()) {
     rte_exit(EXIT_FAILURE, "Can't initialize packet manager\n");
   }

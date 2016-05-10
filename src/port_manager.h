@@ -10,7 +10,7 @@
 
 class PortManager {
  public:
-  PortManager() = default;
+  PortManager();
   ~PortManager() = default;
 
   PortManager(const PortManager &) = delete;
@@ -21,6 +21,7 @@ class PortManager {
   bool Initialize();
   std::shared_ptr<PortBase> GetPort(const unsigned) const;
   PortQueue *GetPortTxQueue(const unsigned, const uint8_t);
+  unsigned GetStatsLcoreId() const;
 
  protected:
   bool InitializePort(const uint8_t, const unsigned) const;
@@ -30,6 +31,7 @@ class PortManager {
   std::unordered_map<unsigned, rte_mempool *> mempools_;
   std::unordered_map<unsigned, std::shared_ptr<PortBase>> ports_;
   PortQueue port_tx_table_[RTE_MAX_LCORE][RTE_MAX_ETHPORTS];
+  unsigned stats_lcore_id_;
 };
 
 #endif // PORT_MANAGER_

@@ -79,6 +79,32 @@ unsigned PortManager::GetStatsLcoreId() const {
   return stats_lcore_id_;
 }
 
+rte_mbuf *PortManager::CopyMbuf(rte_mbuf *src) const {
+  assert(RTE_MBUF_DIRECT(src) == true);
+
+  const unsigned socket_id = rte_lcore_to_socket_id(rte_lcore_id());
+  rte_mempool *mp = mempools_.at(socket_id);
+  rte_mbuf *m = rte_pktmbuf_alloc(mp);
+  if (m == nullptr) {
+    LOG(WARNING) << "mbuf_alloc failed";
+    return nullptr;
+  }
+
+  if (rte_pktmbuf_append(m, src->pkt_len) == nullptr) {
+    LOG(WARNING) << "mbuf_append failed";
+    rte_pktmbuf_free(m);
+    return nullptr;
+  }
+
+  char *dst_data = rte_pktmbuf_mtod(m, char *);
+  const char *src_data = rte_pktmbuf_mtod(src, char *);
+  assert(dst_data != nullptr);
+  assert(src_data != nullptr);
+  rte_memcpy(dst_data, src_data, m->pkt_len);
+
+  return m;
+}
+
 bool PortManager::InitializePort(const uint8_t port_id, const unsigned socket_id) const {
   rte_eth_conf port_conf{};
   // Tune rx

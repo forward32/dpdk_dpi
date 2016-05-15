@@ -18,7 +18,7 @@ class PacketManager {
   void RunProcessing();
 
  protected:
-  void ProcessPackets(PortQueue *);
+  void ProcessPackets(PortQueue *, const uint8_t);
   void PrintStats() const;
 
  private:

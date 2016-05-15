@@ -79,26 +79,51 @@ void PacketManager::RunProcessing() {
     // Read packets from port rx-queue
     if (link.link_status) {
       port->ReceivePackets(&rx_queue);
-      ProcessPackets(&rx_queue);
+      ProcessPackets(&rx_queue, port_id);
     }
   }
 
   LOG(INFO) << "Processing at lcore_id=" << (uint16_t)lcore_id << " finished";
 }
 
-void PacketManager::ProcessPackets(PortQueue *queue) {
+void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
   PacketAnalyzer &analyzer = PacketAnalyzer::Instance();
+  const unsigned lcore_id = rte_lcore_id();
 
   for (uint16_t i = 0; i < queue->count_; ++i) {
-    DLOG(INFO) << "Process single packet at lcore_id=" << (uint16_t)rte_lcore_id();
+    DLOG(INFO) << "Process single packet at lcore_id=" << lcore_id << " from port_id=" << (uint16_t)port_id;
     auto m = queue->queue_[i];
     if (PreparePacket(m)) {
       DLOG(INFO) << "L2_len=" << m->l2_len;
       DLOG(INFO) << "L3_len=" << m->l3_len;
       DLOG(INFO) << "L4_len=" << m->l4_len;
 
-      auto ret = analyzer.Analyze(m);
-      // TODO: execute actions for this protocol type
+      protocol_type protocol = analyzer.Analyze(m);
+      const uint16_t rule_key = (port_id+1) | (protocol << 8);
+      Actions *actions;
+      config_.GetActions(rule_key , actions);
+
+      if (!actions) {
+        continue;
+      }
+
+      for (auto it = actions->cbegin(); it != actions->cend(); ++it) {
+        switch ((*it)->type) {
+          case PUSH_VLAN: {
+            break;
+          }
+          case PUSH_MPLS: {
+            break;
+          }
+          case OUTPUT: {
+            const uint8_t output_port_id = reinterpret_cast<OutputAction*>(*it)->port_id;
+            auto port = port_manager_.GetPort(output_port_id);
+            auto tx_queue = port_manager_.GetPortTxQueue(lcore_id, output_port_id);
+            port->SendOnePacket(port_manager_.CopyMbuf(m), tx_queue);
+            break;
+          }
+        }
+      }
     }
     rte_pktmbuf_free(m);
   }

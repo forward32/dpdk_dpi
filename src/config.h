@@ -5,12 +5,12 @@
 #include <memory>
 #include "action.h"
 
-using Actions = std::vector<std::shared_ptr<Action>>;
+using Actions = std::vector<Action *>;
 
 class Config {
  public:
   explicit Config(const std::string &);
-  ~Config() = default;
+  ~Config();
 
   Config(const Config &) = delete;
   Config &operator=(const Config &) = delete;
@@ -18,6 +18,7 @@ class Config {
   Config &operator=(Config &&) = delete;
 
   bool Initialize();
+  void GetActions(const uint16_t, Actions *&);
 
  protected:
   bool ParsePortAndProtocol(uint16_t &, std::string &);

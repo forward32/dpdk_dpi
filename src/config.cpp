@@ -6,6 +6,14 @@
 Config::Config(const std::string &file_name) : config_name_(file_name) {
 }
 
+Config::~Config() {
+  for (auto it_map = rules_.cbegin(); it_map != rules_.cend(); ++it_map) {
+    for (auto it_vec = it_map->second.cbegin(); it_vec != it_map->second.cend(); ++it_vec) {
+      delete *it_vec;
+    }
+  }
+}
+
 bool Config::Initialize() {
   std::ifstream config(config_name_);
 
@@ -51,6 +59,11 @@ bool Config::Initialize() {
   LOG(INFO) << "Number of rules: " << rules_.size();
 
   return true;
+}
+
+void Config::GetActions(const uint16_t rule_key, Actions *&actions) {
+  auto it = rules_.find(rule_key);
+  actions = it != rules_.end() ? &it->second:nullptr;
 }
 
 bool Config::ParsePortAndProtocol(uint16_t &rule_key, std::string &str) {
@@ -110,7 +123,7 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       push_vlan_action->cfi = cfi;
       push_vlan_action->vid = vid;
       Action *action = reinterpret_cast<Action*>(push_vlan_action);
-      actions.push_back(std::shared_ptr<Action>(action));
+      actions.push_back(action);
       DLOG(INFO) << "Action PUSH-VLAN, tpid=" << tpid << ",pcp=" << (uint16_t)pcp << ",cfi=" << (uint16_t)cfi << ",vid=" << vid;
     }
 
@@ -132,7 +145,7 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       push_mpls_action->exp = exp;
       push_mpls_action->ttl = ttl;
       Action *action = reinterpret_cast<Action*>(push_mpls_action);
-      actions.push_back(std::shared_ptr<Action>(action));
+      actions.push_back(action);
       DLOG(INFO) << "Action PUSH-MPLS, label=" << label << ",exp=" << (uint16_t)exp << ",ttl=" << (uint16_t)ttl;
     }
 
@@ -152,7 +165,7 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       output_action->type = OUTPUT;
       output_action->port_id = (uint8_t)port_id;
       Action *action = reinterpret_cast<Action*>(output_action);
-      actions.push_back(std::shared_ptr<Action>(action));
+      actions.push_back(action);
       DLOG(INFO) << "Action OUTPUT, port_id=" << port_id;
     }
 

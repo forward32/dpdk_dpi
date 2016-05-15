@@ -22,6 +22,7 @@ class PortManager {
   std::shared_ptr<PortBase> GetPort(const unsigned) const;
   PortQueue *GetPortTxQueue(const unsigned, const uint8_t);
   unsigned GetStatsLcoreId() const;
+  rte_mbuf *CopyMbuf(rte_mbuf *) const;
 
  protected:
   bool InitializePort(const uint8_t, const unsigned) const;

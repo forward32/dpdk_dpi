@@ -19,6 +19,8 @@ class PacketManager {
 
  protected:
   void ProcessPackets(PortQueue *, const uint8_t);
+  void ExecuteOutput(rte_mbuf *, const uint8_t);
+
   void PrintStats() const;
 
  private:

@@ -7,6 +7,22 @@
 
 #define ETHER_TYPE_VLAN_8021AD 0x88a8
 
+bool ParseInt(const std::string &str, unsigned long &ret) {
+  try {
+    size_t end_pos;
+    ret = std::stoul(str.c_str(), &end_pos, 10);
+    if (end_pos != str.length()) {
+      return false;
+    }
+  }
+  catch (const std::logic_error &err) {
+    return false;
+  }
+
+  return true;
+}
+
+namespace packet_modifier{
 bool PreparePacket(rte_mbuf *m) {
   char *pkt_data = rte_ctrlmbuf_data(m);
   uint16_t *eth_type = (uint16_t *)(pkt_data + 2*ETHER_ADDR_LEN);
@@ -58,17 +74,28 @@ bool PreparePacket(rte_mbuf *m) {
   return true;
 }
 
-bool ParseInt(const std::string &str, unsigned long &ret) {
-  try {
-    size_t end_pos;
-    ret = std::stoul(str.c_str(), &end_pos, 10);
-    if (end_pos != str.length()) {
-      return false;
-    }
-  }
-  catch (const std::logic_error &err) {
-    return false;
+void ExecutePushVlan(rte_mbuf *m, const uint32_t vlan_tag) {
+  if (rte_vlan_insert(&m) != 0) {
+    LOG(WARNING) << "Can't insert vlan";
+    return;
   }
 
-  return true;
+  constexpr uint8_t mac_addr_len = 6;
+  char *dst_data = rte_pktmbuf_mtod_offset(m, char *, mac_addr_len*2);
+  rte_memcpy(dst_data, &vlan_tag, sizeof(vlan_tag));
+}
+
+void ExecutePushMpls(rte_mbuf *m, const uint32_t mpls_label) {
+  char *src_data = rte_pktmbuf_mtod(m, char *);
+  char *dst_data = (char *)rte_pktmbuf_prepend(m, sizeof(mpls_label));
+  if (!dst_data) {
+    LOG(WARNING) << "Can't insert mpls";
+    return;
+  }
+
+  memmove(dst_data, src_data, m->l2_len);
+  rte_memcpy(dst_data+m->l2_len, &mpls_label, sizeof(mpls_label));
+  const uint16_t mpls_ethertype = rte_cpu_to_be_16(0x8847);
+  rte_memcpy(dst_data+m->l2_len-2, &mpls_ethertype, 2);
+}
 }

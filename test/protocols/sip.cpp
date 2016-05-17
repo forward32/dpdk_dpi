@@ -4,6 +4,8 @@
 
 extern protocol_type SearchSip(rte_mbuf *);
 
+using namespace packet_modifier;
+
 TEST(SIP, BadLength) {
   uint8_t data[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

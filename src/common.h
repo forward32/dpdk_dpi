@@ -33,8 +33,12 @@ static std::unordered_map<uint8_t, uint8_t> action_priority = {
   {OUTPUT, 2},
 };
 
-bool PreparePacket(rte_mbuf *);
-
 bool ParseInt(const std::string &, unsigned long &);
+
+namespace packet_modifier {
+  bool PreparePacket(rte_mbuf *);
+  void ExecutePushVlan(rte_mbuf *, const uint32_t);
+  void ExecutePushMpls(rte_mbuf *, const uint32_t);
+}
 
 #endif // COMMON_

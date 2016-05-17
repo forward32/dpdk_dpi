@@ -9,17 +9,12 @@ struct Action {
 
 struct PushVlanAction {
   action_type type;
-  uint16_t tpid;
-  uint8_t pcp;
-  uint8_t cfi;
-  uint16_t vid;
+  uint32_t vlan_tag;
 };
 
 struct PushMplsAction {
   action_type type;
-  uint32_t label;
-  uint8_t exp;
-  uint8_t ttl;
+  uint32_t mpls_label;
 };
 
 struct OutputAction {

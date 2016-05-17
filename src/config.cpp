@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <glog/logging.h>
 #include "config.h"
+#include <rte_byteorder.h>
 
 Config::Config(const std::string &file_name) : config_name_(file_name) {
 }
@@ -116,15 +117,18 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       if (!ParseVlanData(tpid, pcp, cfi, vid, action_s)) {
         return false;
       }
+      uint32_t vlan_tag = vid;
+      vlan_tag |= (uint32_t)cfi<<12;
+      vlan_tag |= (uint32_t)pcp<<13;
+      vlan_tag |= (uint32_t)tpid<<16;
       PushVlanAction *push_vlan_action = new PushVlanAction;
       push_vlan_action->type = PUSH_VLAN;
-      push_vlan_action->tpid = tpid;
-      push_vlan_action->pcp = pcp;
-      push_vlan_action->cfi = cfi;
-      push_vlan_action->vid = vid;
+      push_vlan_action->vlan_tag = rte_cpu_to_be_32(vlan_tag);
       Action *action = reinterpret_cast<Action*>(push_vlan_action);
       actions.push_back(action);
-      DLOG(INFO) << "Action PUSH-VLAN, tpid=" << tpid << ",pcp=" << (uint16_t)pcp << ",cfi=" << (uint16_t)cfi << ",vid=" << vid;
+      DLOG(INFO) << "Action PUSH-VLAN, tpid=" << tpid << ",pcp=" << (uint16_t)pcp
+                 << ",cfi=" << (uint16_t)cfi << ",vid=" << vid
+                 << ",tag(host)=" << vlan_tag << ",tag(net)=" << push_vlan_action->vlan_tag;
     }
 
     else if (action_s.find(push_mpls_prefix) != std::string::npos) {
@@ -139,14 +143,17 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       if (!ParseMplsData(label, exp, ttl, action_s)) {
         return false;
       }
+      uint32_t mpls_label = ttl;
+      mpls_label |= (uint32_t)1<<8;
+      mpls_label |= (uint32_t)exp<<9;
+      mpls_label |= label<<12;
       PushMplsAction *push_mpls_action = new PushMplsAction;
       push_mpls_action->type = PUSH_MPLS;
-      push_mpls_action->label = label;
-      push_mpls_action->exp = exp;
-      push_mpls_action->ttl = ttl;
+      push_mpls_action->mpls_label = rte_cpu_to_be_32(mpls_label);
       Action *action = reinterpret_cast<Action*>(push_mpls_action);
       actions.push_back(action);
-      DLOG(INFO) << "Action PUSH-MPLS, label=" << label << ",exp=" << (uint16_t)exp << ",ttl=" << (uint16_t)ttl;
+      DLOG(INFO) << "Action PUSH-MPLS, label=" << label << ",exp=" << (uint16_t)exp << ",ttl=" << (uint16_t)ttl
+                 << ",label(host)=" << mpls_label << ",label(net)=" << push_mpls_action->mpls_label;
     }
 
     else if (action_s.find(output_prefix) != std::string::npos) {

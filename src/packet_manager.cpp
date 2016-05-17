@@ -88,12 +88,11 @@ void PacketManager::RunProcessing() {
 
 void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
   PacketAnalyzer &analyzer = PacketAnalyzer::Instance();
-  const unsigned lcore_id = rte_lcore_id();
 
   for (uint16_t i = 0; i < queue->count_; ++i) {
-    DLOG(INFO) << "Process single packet at lcore_id=" << lcore_id << " from port_id=" << (uint16_t)port_id;
+    DLOG(INFO) << "Process single packet from port_id=" << (uint16_t)port_id;
     auto m = queue->queue_[i];
-    if (PreparePacket(m)) {
+    if (packet_modifier::PreparePacket(m)) {
       DLOG(INFO) << "L2_len=" << m->l2_len;
       DLOG(INFO) << "L3_len=" << m->l3_len;
       DLOG(INFO) << "L4_len=" << m->l4_len;
@@ -110,16 +109,19 @@ void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
       for (auto it = actions->cbegin(); it != actions->cend(); ++it) {
         switch ((*it)->type) {
           case PUSH_VLAN: {
+            auto vlan_data = reinterpret_cast<PushVlanAction*>(*it);
+            packet_modifier::ExecutePushVlan(m, vlan_data->vlan_tag);
             break;
           }
           case PUSH_MPLS: {
+            auto mpls_data = reinterpret_cast<PushMplsAction*>(*it);
+            packet_modifier::ExecutePushMpls(m, mpls_data->mpls_label);
             break;
           }
           case OUTPUT: {
-            const uint8_t output_port_id = reinterpret_cast<OutputAction*>(*it)->port_id;
-            auto port = port_manager_.GetPort(output_port_id);
-            auto tx_queue = port_manager_.GetPortTxQueue(lcore_id, output_port_id);
-            port->SendOnePacket(port_manager_.CopyMbuf(m), tx_queue);
+            auto output_data = reinterpret_cast<OutputAction*>(*it);
+            rte_mbuf *m_copy = port_manager_.CopyMbuf(m);
+            this->ExecuteOutput(m_copy, output_data->port_id);
             break;
           }
         }
@@ -129,6 +131,12 @@ void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
   }
 
   queue->count_ = 0;
+}
+
+void PacketManager::ExecuteOutput(rte_mbuf *m, const uint8_t port_id) {
+  auto port = port_manager_.GetPort(port_id);
+  auto tx_queue = port_manager_.GetPortTxQueue(rte_lcore_id(), port_id);
+  port->SendOnePacket(m, tx_queue);
 }
 
 void PacketManager::PrintStats() const {

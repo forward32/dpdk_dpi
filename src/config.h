@@ -24,7 +24,7 @@ class Config {
   bool ParsePortAndProtocol(uint16_t &, std::string &);
   bool ParseActions(Actions &, std::string &);
   bool ParseVlanData(uint16_t &, uint8_t &, uint8_t &, uint16_t &, std::string &);
-  bool ParseMplsData(uint32_t &, uint8_t &, uint8_t &, std::string &);
+  bool ParseMplsData(uint32_t &, uint8_t &, uint8_t &, uint8_t &, std::string &);
 
  private:
   std::string config_name_;

@@ -3,6 +3,11 @@
 #include <glog/logging.h>
 #include "config.h"
 #include <rte_byteorder.h>
+#include <rte_ethdev.h>
+
+static bool inline PortIdIsValid(const unsigned long port_id) {
+  return (port_id > 0 && port_id <= rte_eth_dev_count());
+}
 
 Config::Config(const std::string &file_name) : config_name_(file_name) {
 }
@@ -80,6 +85,10 @@ bool Config::ParsePortAndProtocol(uint16_t &rule_key, std::string &str) {
     LOG(ERROR) << "Can't convert port, value=" << port_s;
     return false;
   }
+  if (!PortIdIsValid(port_id)) {
+    LOG(ERROR) << "Invalid port_id value=" << port_id;
+    return false;
+  }
 
   std::string protocol_s = str.substr(pos+1);
   if (protocol_map.find(protocol_s) == protocol_map.end()) {
@@ -90,7 +99,7 @@ bool Config::ParsePortAndProtocol(uint16_t &rule_key, std::string &str) {
 
   DLOG(INFO) << "Port:" << port_id << ",protocol:" << protocol_s;
 
-  rule_key = (uint8_t)port_id | (protocol << 8);
+  rule_key = (uint8_t)(port_id-1) | (protocol << 8);
 
   return true;
 }
@@ -139,12 +148,12 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       }
       action_s = action_s.substr(push_mpls_prefix_len, action_s_len-push_mpls_prefix_len-1);
       uint32_t label;
-      uint8_t exp, ttl;
-      if (!ParseMplsData(label, exp, ttl, action_s)) {
+      uint8_t exp, bos, ttl;
+      if (!ParseMplsData(label, exp, bos, ttl, action_s)) {
         return false;
       }
       uint32_t mpls_label = ttl;
-      mpls_label |= (uint32_t)1<<8;
+      mpls_label |= (uint32_t)bos<<8;
       mpls_label |= (uint32_t)exp<<9;
       mpls_label |= label<<12;
       PushMplsAction *push_mpls_action = new PushMplsAction;
@@ -152,7 +161,7 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
       push_mpls_action->mpls_label = rte_cpu_to_be_32(mpls_label);
       Action *action = reinterpret_cast<Action*>(push_mpls_action);
       actions.push_back(action);
-      DLOG(INFO) << "Action PUSH-MPLS, label=" << label << ",exp=" << (uint16_t)exp << ",ttl=" << (uint16_t)ttl
+      DLOG(INFO) << "Action PUSH-MPLS, label=" << label << ",exp=" << (uint16_t)exp << ",bos=" << (uint16_t)bos << ",ttl=" << (uint16_t)ttl
                  << ",label(host)=" << mpls_label << ",label(net)=" << push_mpls_action->mpls_label;
     }
 
@@ -168,12 +177,16 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
         LOG(ERROR) << "Can't convert output port_id, value=" << port_id_s;
         return false;
       }
+      if (!PortIdIsValid(port_id)) {
+        LOG(ERROR) << "Invalid port_id value=" << port_id;
+        return false;
+      }
+      DLOG(INFO) << "Action OUTPUT, port_id=" << port_id;
       OutputAction *output_action = new OutputAction;
       output_action->type = OUTPUT;
-      output_action->port_id = (uint8_t)port_id;
+      output_action->port_id = (uint8_t)(port_id-1);
       Action *action = reinterpret_cast<Action*>(output_action);
       actions.push_back(action);
-      DLOG(INFO) << "Action OUTPUT, port_id=" << port_id;
     }
 
     else {
@@ -260,7 +273,7 @@ bool Config::ParseVlanData(uint16_t &tpid, uint8_t &pcp, uint8_t &cfi, uint16_t 
     return false;
   }
   vid = (uint16_t)ret;
-  if (vid > 4094) {
+  if (vid == 0 || vid > 4094) {
     LOG(ERROR) << "Invalid vlan vid value=" << vid;
     return false;
   }
@@ -268,7 +281,7 @@ bool Config::ParseVlanData(uint16_t &tpid, uint8_t &pcp, uint8_t &cfi, uint16_t 
   return true;
 }
 
-bool Config::ParseMplsData(uint32_t &label, uint8_t &exp, uint8_t &ttl, std::string &str) {
+bool Config::ParseMplsData(uint32_t &label, uint8_t &exp, uint8_t &bos, uint8_t &ttl, std::string &str) {
   auto pos = str.find(",");
   if (pos == std::string::npos) {
     LOG(ERROR) << "Can't parse mpls label (delimeter not found)";
@@ -296,6 +309,23 @@ bool Config::ParseMplsData(uint32_t &label, uint8_t &exp, uint8_t &ttl, std::str
   exp = (uint8_t)ret;
   if (exp > 7) {
     LOG(ERROR) << "Invalid mpls exp value=" << (uint16_t)exp;
+    return false;
+  }
+
+  str = str.substr(pos+1);
+  pos = str.find(",");
+  if (pos == std::string::npos) {
+    LOG(ERROR) << "Can't parse mpls bos (delimeter not found)";
+    return false;
+  }
+  std::string bos_s = str.substr(0, pos);
+  if (!ParseInt(bos_s, ret)) {
+    LOG(ERROR) << "Can't convert mpls bos, value=" << bos_s;
+    return false;
+  }
+  bos = (uint8_t)ret;
+  if (bos > 1) {
+    LOG(ERROR) << "Invalid mpls bos value=" << (uint16_t)bos;
     return false;
   }
 

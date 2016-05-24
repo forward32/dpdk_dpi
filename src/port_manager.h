@@ -11,7 +11,7 @@
 class PortManager {
  public:
   PortManager();
-  ~PortManager() = default;
+  ~PortManager();
 
   PortManager(const PortManager &) = delete;
   PortManager &operator=(const PortManager &) = delete;
@@ -19,7 +19,8 @@ class PortManager {
   PortManager &operator=(PortManager &&) = delete;
 
   bool Initialize();
-  std::shared_ptr<PortBase> GetPort(const unsigned) const;
+  PortBase *GetPortByCore(const unsigned) const;
+  PortBase *GetPortByIndex(const uint8_t) const;
   PortQueue *GetPortTxQueue(const unsigned, const uint8_t);
   unsigned GetStatsLcoreId() const;
   rte_mbuf *CopyMbuf(rte_mbuf *) const;
@@ -29,8 +30,9 @@ class PortManager {
   void CheckPortsLinkStatus(const uint8_t) const;
 
  private:
-  std::unordered_map<unsigned, rte_mempool *> mempools_;
-  std::unordered_map<unsigned, std::shared_ptr<PortBase>> ports_;
+  std::unordered_map<unsigned, rte_mempool *> mempools_; // socket->mempool
+  std::unordered_map<unsigned, PortBase *> ports_map_;   // lcore->port
+  std::vector<PortBase *> ports_;                        // ports
   PortQueue port_tx_table_[RTE_MAX_LCORE][RTE_MAX_ETHPORTS];
   unsigned stats_lcore_id_;
 };

@@ -35,7 +35,7 @@ void PacketManager::RunProcessing() {
   rte_eth_link link;
 
   auto lcore_id = rte_lcore_id();
-  auto port = port_manager_.GetPort(lcore_id);
+  auto port = port_manager_.GetPortByCore(lcore_id);
   if (!port) {
     LOG(WARNING) << "No task for lcore_id=" << (uint16_t)lcore_id;
     return;
@@ -98,7 +98,7 @@ void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
       DLOG(INFO) << "L4_len=" << m->l4_len;
 
       protocol_type protocol = analyzer.Analyze(m);
-      const uint16_t rule_key = (port_id+1) | (protocol << 8);
+      const uint16_t rule_key = port_id | (protocol << 8);
       Actions *actions;
       config_.GetActions(rule_key , actions);
 
@@ -134,7 +134,7 @@ void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
 }
 
 void PacketManager::ExecuteOutput(rte_mbuf *m, const uint8_t port_id) {
-  auto port = port_manager_.GetPort(port_id);
+  auto port = port_manager_.GetPortByIndex(port_id);
   auto tx_queue = port_manager_.GetPortTxQueue(rte_lcore_id(), port_id);
   port->SendOnePacket(m, tx_queue);
 }

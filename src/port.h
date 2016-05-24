@@ -18,7 +18,7 @@ struct PortQueue {
 class PortBase {
  public:
   explicit PortBase(const uint8_t);
-  ~PortBase() = default;
+  virtual ~PortBase() = default;
 
   PortBase(const PortBase &) = delete;
   PortBase &operator=(const PortBase &) = delete;
@@ -39,8 +39,7 @@ class PortBase {
 class PortEthernet : public PortBase {
  public:
   explicit PortEthernet(const uint8_t);
-
-  ~PortEthernet() = default;
+  virtual ~PortEthernet() = default;
 
   PortEthernet(const PortEthernet &) = delete;
   PortEthernet &operator=(const PortEthernet &) = delete;

@@ -15,6 +15,12 @@ static constexpr auto kNB_TXD = 512;
 
 PortManager::PortManager() : stats_lcore_id_(RTE_MAX_LCORE) {}
 
+PortManager::~PortManager() {
+  for (auto port : ports_) {
+    delete port;
+  }
+}
+
 bool PortManager::Initialize() {
   auto nb_ports = rte_eth_dev_count();
   LOG(INFO) << "Number of ports: " << (uint16_t)nb_ports;
@@ -48,7 +54,9 @@ bool PortManager::Initialize() {
       return false;
     }
 
-    ports_.emplace(lcore_id, std::make_shared<PortEthernet>(i));
+    PortBase *port = new PortEthernet(i);
+    ports_.push_back(port);
+    ports_map_.emplace(lcore_id, port);
     LOG(INFO) << "Port mapping: port_id=" << (uint16_t)i << "->lcore_id=" << (uint16_t)lcore_id;
 
     ++lcore_id;
@@ -62,12 +70,21 @@ bool PortManager::Initialize() {
   return true;
 }
 
-std::shared_ptr<PortBase> PortManager::GetPort(const unsigned lcore_id) const {
+PortBase *PortManager::GetPortByCore(const unsigned lcore_id) const {
   try {
-    return ports_.at(lcore_id);
+    return ports_map_.at(lcore_id);
   }
   catch (const std::out_of_range &err) {
-    return std::shared_ptr<PortBase>();
+    return nullptr;
+  }
+}
+
+PortBase *PortManager::GetPortByIndex(const uint8_t port_id) const {
+  try {
+    return ports_.at(port_id);
+  }
+  catch (const std::out_of_range &err) {
+    return nullptr;
   }
 }
 

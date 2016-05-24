@@ -1,6 +1,5 @@
 #include <rte_config.h>
 #include <rte_cycles.h>
-#include <atomic>
 #include <cassert>
 #include <glog/logging.h>
 #include "packet_manager.h"
@@ -88,6 +87,8 @@ void PacketManager::RunProcessing() {
 
 void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
   PacketAnalyzer &analyzer = PacketAnalyzer::Instance();
+  auto lcore_id = rte_lcore_id();
+  auto port = port_manager_.GetPortByIndex(port_id);
 
   for (uint16_t i = 0; i < queue->count_; ++i) {
     DLOG(INFO) << "Process single packet from port_id=" << (uint16_t)port_id;
@@ -98,6 +99,7 @@ void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
       DLOG(INFO) << "L4_len=" << m->l4_len;
 
       protocol_type protocol = analyzer.Analyze(m);
+      port->UpdateProtocolStats(protocol, lcore_id);
       const uint16_t rule_key = port_id | (protocol << 8);
       Actions *actions;
       config_.GetActions(rule_key , actions);
@@ -153,6 +155,12 @@ void PacketManager::PrintStats() const {
     os << "port_id=" << (uint16_t)i << "\n";
     os << " - Pkts in: " << stats.ipackets << "\n";
     os << " - Pkts out: " << stats.opackets << "\n";
+
+    auto port = port_manager_.GetPortByIndex(i);
+    os << "     HTTP: " << port->GetProtocolStats(HTTP) << "\n";
+    os << "     SIP: " << port->GetProtocolStats(SIP) << "\n";
+    os << "     RTP: " << port->GetProtocolStats(RTP) << "\n";
+    os << "     RTSP: " << port->GetProtocolStats(RTSP) << "\n";
   }
 
   os << "====================\n";

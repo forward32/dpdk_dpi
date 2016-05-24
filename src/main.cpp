@@ -1,5 +1,4 @@
 #include <glog/logging.h>
-#include <atomic>
 #include <csignal>
 #include "packet_manager.h"
 #include "cmd_args.h"

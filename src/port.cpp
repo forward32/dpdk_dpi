@@ -2,10 +2,73 @@
 #include <rte_ethdev.h>
 
 PortBase::PortBase(const uint8_t port_id) : port_id_(port_id) {
+  memset(&protocol_stats_, 0, sizeof(protocol_stats_));
 }
 
 uint8_t PortBase::GetPortId() const {
   return port_id_;
+}
+
+void PortBase::UpdateProtocolStats(const protocol_type protocol, const unsigned lcore_id) {
+  switch (protocol) {
+    case HTTP: {
+      protocol_stats_.http[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      break;
+    }
+    case SIP: {
+      protocol_stats_.sip[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      break;
+    }
+    case RTP: {
+      protocol_stats_.rtp[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      break;
+    }
+    case RTSP: {
+      protocol_stats_.rtsp[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      break;
+    }
+    case UNKNOWN:
+    default: {
+      break;
+    }
+  }
+}
+
+uint64_t PortBase::GetProtocolStats(const protocol_type protocol) const {
+  uint64_t ret = 0;
+
+  switch (protocol) {
+    case HTTP: {
+      for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
+        ret += protocol_stats_.http[i].load(std::memory_order_relaxed);
+      }
+      break;
+    }
+    case SIP: {
+      for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
+        ret += protocol_stats_.sip[i].load(std::memory_order_relaxed);
+      }
+      break;
+    }
+    case RTP: {
+      for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
+        ret += protocol_stats_.rtp[i].load(std::memory_order_relaxed);
+      }
+      break;
+    }
+    case RTSP: {
+      for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
+        ret += protocol_stats_.rtsp[i].load(std::memory_order_relaxed);
+      }
+      break;
+    }
+    case UNKNOWN:
+    default: {
+      break;
+    }
+  }
+
+  return ret;
 }
 
 

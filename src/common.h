@@ -6,7 +6,7 @@
 #include <rte_mbuf.h>
 
 enum protocol_type: uint8_t {
-  FTP = 0,
+  HTTP,
   SIP,
   RTP,
   RTSP,
@@ -14,7 +14,7 @@ enum protocol_type: uint8_t {
 };
 
 static std::unordered_map<std::string, protocol_type> protocol_map = {
-  {"FTP", FTP},
+  {"HTTP", HTTP},
   {"SIP", SIP},
   {"RTP", RTP},
   {"RTSP", RTSP},

@@ -108,6 +108,9 @@ void PacketManager::ProcessPackets(PortQueue *queue, const uint8_t port_id) {
 
       for (auto it = actions->cbegin(); it != actions->cend(); ++it) {
         switch ((*it)->type) {
+          case DROP: {
+             break;
+          }
           case PUSH_VLAN: {
             auto vlan_data = reinterpret_cast<PushVlanAction*>(*it);
             packet_modifier::ExecutePushVlan(m, vlan_data->vlan_tag);

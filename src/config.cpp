@@ -105,6 +105,7 @@ bool Config::ParsePortAndProtocol(uint16_t &rule_key, std::string &str) {
 }
 
 bool Config::ParseActions(Actions &actions, std::string &str) {
+  static const std::string drop_prefix = "DROP";
   static const std::string push_vlan_prefix = "PUSH-VLAN(";
   static const std::string push_mpls_prefix = "PUSH-MPLS(";
   static const std::string output_prefix = "OUTPUT(";
@@ -113,6 +114,14 @@ bool Config::ParseActions(Actions &actions, std::string &str) {
   while((pos = str.find(";")) != std::string::npos) {
     std::string action_s = str.substr(0, pos);
     auto action_s_len = action_s.length();
+
+    if (action_s.find(drop_prefix) != std::string::npos) {
+      Action *drop_action = new Action;
+      drop_action->type = DROP;
+      actions.push_back(drop_action);
+      DLOG(INFO) << "Action DROP, other actions will be ignored";
+      break;
+    }
 
     if (action_s.find(push_vlan_prefix) != std::string::npos) {
       auto push_vlan_prefix_len = push_vlan_prefix.length();

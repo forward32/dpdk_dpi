@@ -5,6 +5,8 @@
 #include <rte_config.h>
 #include <rte_mbuf.h>
 
+#define CACHE_LINE_SIZE 64
+
 enum protocol_type: uint8_t {
   HTTP,
   SIP,

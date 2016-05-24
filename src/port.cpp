@@ -12,19 +12,19 @@ uint8_t PortBase::GetPortId() const {
 void PortBase::UpdateProtocolStats(const protocol_type protocol, const unsigned lcore_id) {
   switch (protocol) {
     case HTTP: {
-      protocol_stats_.http[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      protocol_stats_[lcore_id].http.fetch_add(1, std::memory_order_relaxed);
       break;
     }
     case SIP: {
-      protocol_stats_.sip[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      protocol_stats_[lcore_id].sip.fetch_add(1, std::memory_order_relaxed);
       break;
     }
     case RTP: {
-      protocol_stats_.rtp[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      protocol_stats_[lcore_id].rtp.fetch_add(1, std::memory_order_relaxed);
       break;
     }
     case RTSP: {
-      protocol_stats_.rtsp[lcore_id].fetch_add(1, std::memory_order_relaxed);
+      protocol_stats_[lcore_id].rtsp.fetch_add(1, std::memory_order_relaxed);
       break;
     }
     case UNKNOWN:
@@ -40,25 +40,25 @@ uint64_t PortBase::GetProtocolStats(const protocol_type protocol) const {
   switch (protocol) {
     case HTTP: {
       for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
-        ret += protocol_stats_.http[i].load(std::memory_order_relaxed);
+        ret += protocol_stats_[i].http.load(std::memory_order_relaxed);
       }
       break;
     }
     case SIP: {
       for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
-        ret += protocol_stats_.sip[i].load(std::memory_order_relaxed);
+        ret += protocol_stats_[i].sip.load(std::memory_order_relaxed);
       }
       break;
     }
     case RTP: {
       for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
-        ret += protocol_stats_.rtp[i].load(std::memory_order_relaxed);
+        ret += protocol_stats_[i].rtp.load(std::memory_order_relaxed);
       }
       break;
     }
     case RTSP: {
       for (uint8_t i = 0; i < kMAX_LCORES; ++i) {
-        ret += protocol_stats_.rtsp[i].load(std::memory_order_relaxed);
+        ret += protocol_stats_[i].rtsp.load(std::memory_order_relaxed);
       }
       break;
     }

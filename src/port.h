@@ -35,14 +35,14 @@ class PortBase {
 
  private:
   struct ProtocolStats {
-    std::atomic<uint64_t> http[kMAX_LCORES];
-    std::atomic<uint64_t> sip[kMAX_LCORES];
-    std::atomic<uint64_t> rtp[kMAX_LCORES];
-    std::atomic<uint64_t> rtsp[kMAX_LCORES];
-  };
+    std::atomic<uint64_t> http;
+    std::atomic<uint64_t> sip;
+    std::atomic<uint64_t> rtp;
+    std::atomic<uint64_t> rtsp;
+  } __attribute__((aligned(CACHE_LINE_SIZE)));
 
   uint8_t port_id_;
-  ProtocolStats protocol_stats_;
+  ProtocolStats protocol_stats_[kMAX_LCORES];
 };
 
 

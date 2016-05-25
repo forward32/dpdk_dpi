@@ -40,18 +40,21 @@ void PacketManager::RunProcessing() {
     return;
   }
   auto port_id = port->GetPortId();
-  auto tx_queue = port_manager_.GetPortTxQueue(lcore_id, port_id);
-  assert(tx_queue != nullptr);
   PortQueue rx_queue;
   auto lcore_stats_id = port_manager_.GetStatsLcoreId();
+  auto nb_ports = rte_eth_dev_count();
   LOG(INFO) << "Processing at lcore_id=" << (uint16_t)lcore_id << " started";
 
   while(!terminated.load(std::memory_order_relaxed)) {
     cur_tsc = rte_rdtsc();
     diff_tsc = cur_tsc - prev_tsc;
     if (diff_tsc >= drain_tsc) {
-      // Flush port tx-queue
-      port->SendAllPackets(tx_queue);
+      // Flush port tx-queues
+      for (uint8_t i = 0; i < nb_ports; ++i) {
+        auto port_i = port_manager_.GetPortByIndex(i);
+        auto tx_queue_i = port_manager_.GetPortTxQueue(lcore_id, i);
+        port_i->SendAllPackets(tx_queue_i);
+      }
       prev_tsc = cur_tsc;
 
       timer_tsc += diff_tsc;

@@ -40,12 +40,13 @@ bool PreparePacket(rte_mbuf *m) {
   uint8_t ip_proto = 0;
   switch (rte_cpu_to_be_16(*eth_type)) {
     case ETHER_TYPE_IPv4: {
-      m->l3_len = sizeof(ipv4_hdr);
-      ip_proto = ((ipv4_hdr *)(eth_type + 1))->next_proto_id;
+      ipv4_hdr *ipv4 = (ipv4_hdr *)(eth_type + 1);
+      m->l3_len = 4*(ipv4->version_ihl & 0x0F);
+      ip_proto = ipv4->next_proto_id;
       break;
     }
     case ETHER_TYPE_IPv6: {
-      m->l3_len = sizeof(ipv6_hdr);
+      m->l3_len = sizeof(ipv6_hdr); // always 40 bytes
       ip_proto = ((ipv6_hdr *)(eth_type + 1))->proto;
       break;
     }
@@ -58,11 +59,12 @@ bool PreparePacket(rte_mbuf *m) {
   // If it's not TCP or UDP packet - skip it
   switch (ip_proto) {
     case IPPROTO_TCP: {
-      m->l4_len = sizeof(tcp_hdr);
+      tcp_hdr *tcp = rte_pktmbuf_mtod_offset(m, tcp_hdr *, m->l2_len + m->l3_len);
+      m->l4_len = 4*((tcp->data_off & 0xF0) >> 4);
       break;
     }
     case IPPROTO_UDP: {
-      m->l4_len = sizeof(udp_hdr);
+      m->l4_len = sizeof(udp_hdr); // always 8 bytes
       break;
     }
     default: {

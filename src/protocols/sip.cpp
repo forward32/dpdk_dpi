@@ -1,42 +1,73 @@
 #include <string.h>
 #include "common.h"
 
-static inline bool SearchSipMethod(uint8_t *data, const char *method_up, const char *method_lo) {
-  const size_t method_len = strlen(method_up);
+static constexpr auto sip_min_len = 14;
+static constexpr auto sip_version = "SIP/2.0";
+static constexpr auto sip_version_len = strlen(sip_version);
+static constexpr auto sip_prefix_up = "SIP:";
+static constexpr auto sip_prefix_lo = "sip:";
+static constexpr auto sip_prefix_len = strlen(sip_prefix_up);
 
-  return ((!memcmp(data, method_up, method_len) || !memcmp(data, method_lo, method_len)) &&
-          (!memcmp(data + method_len + 1, "SIP:", 4) || !memcmp(data + method_len + 1, "sip:", 4)));
+static inline bool SearchSipMethod(char *data, const char *method) {
+  const size_t method_len = strlen(method);
+  // Method type
+  for (size_t i = 0; i < method_len; ++i) {
+    if (*data++ != method[i]) {
+      return false;
+    }
+  }
+  // Space
+  if (*data++ != ' ') {
+    return false;
+  }
+  // Protocol prefix
+  for (size_t i = 0; i < sip_prefix_len; ++i) {
+    if (*data != sip_prefix_up[i]) {
+      if (*data != sip_prefix_lo[i]) {
+        return false;
+      }
+    }
+    ++data;
+  }
+
+  return true;
 }
 
 protocol_type SearchSip(rte_mbuf *m) {
   const uint16_t headers_len = m->l2_len + m->l3_len + m->l4_len;
   const uint16_t payload_len = m->pkt_len - headers_len;
-  // minimum 14 bytes
-  constexpr uint8_t sip_min_len = 14;
   if (payload_len < sip_min_len) return UNKNOWN;
 
-  uint8_t *payload = rte_pktmbuf_mtod_offset(m, uint8_t *, headers_len);
+  char *payload = rte_pktmbuf_mtod_offset(m, char *, headers_len);
 
   // Response case
-  if (!memcmp(payload, "SIP/2.0", 7) || !memcmp(payload, "sip/2.0", 7)) {
+  bool response = true;
+  char *tmp_payload = payload;
+  for (size_t i = 0; i < sip_version_len; ++i) {
+    if (*tmp_payload++ != sip_version[i]) {
+      response = false;
+      break;
+    }
+  }
+  if (response) {
     return SIP;
   }
 
   // Methods
-  if (SearchSipMethod(payload, "INVITE", "invite")) return SIP;
-  if (SearchSipMethod(payload, "ACK", "ack")) return SIP;
-  if (SearchSipMethod(payload, "BYE", "bye")) return SIP;
-  if (SearchSipMethod(payload, "CANCEL", "cancel")) return SIP;
-  if (SearchSipMethod(payload, "OPTIONS", "options")) return SIP;
-  if (SearchSipMethod(payload, "REGISTER", "register")) return SIP;
-  if (SearchSipMethod(payload, "PRACK", "prack")) return SIP;
-  if (SearchSipMethod(payload, "SUBSCRIBE", "subscribe")) return SIP;
-  if (SearchSipMethod(payload, "NOTIFY", "notify")) return SIP;
-  if (SearchSipMethod(payload, "PUBLISH", "publish")) return SIP;
-  if (SearchSipMethod(payload, "INFO", "info")) return SIP;
-  if (SearchSipMethod(payload, "REFER", "refer")) return SIP;
-  if (SearchSipMethod(payload, "MESSAGE", "message")) return SIP;
-  if (SearchSipMethod(payload, "UPDATE", "update")) return SIP;
+  if (SearchSipMethod(payload, "INVITE")) return SIP;
+  if (SearchSipMethod(payload, "ACK")) return SIP;
+  if (SearchSipMethod(payload, "BYE")) return SIP;
+  if (SearchSipMethod(payload, "CANCEL")) return SIP;
+  if (SearchSipMethod(payload, "OPTIONS")) return SIP;
+  if (SearchSipMethod(payload, "REGISTER")) return SIP;
+  if (SearchSipMethod(payload, "PRACK")) return SIP;
+  if (SearchSipMethod(payload, "SUBSCRIBE")) return SIP;
+  if (SearchSipMethod(payload, "NOTIFY")) return SIP;
+  if (SearchSipMethod(payload, "PUBLISH")) return SIP;
+  if (SearchSipMethod(payload, "INFO")) return SIP;
+  if (SearchSipMethod(payload, "REFER")) return SIP;
+  if (SearchSipMethod(payload, "MESSAGE")) return SIP;
+  if (SearchSipMethod(payload, "UPDATE")) return SIP;
 
   return UNKNOWN;
 }

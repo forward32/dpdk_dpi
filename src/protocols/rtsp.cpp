@@ -1,39 +1,70 @@
 #include <string.h>
 #include "common.h"
 
-static inline bool SearchRtspMethod(uint8_t *data, const char *method_up, const char *method_lo) {
-  const size_t method_len = strlen(method_up);
+static constexpr auto rtsp_min_len = 15;
+static constexpr auto rtsp_version = "RTSP/1.0";
+static constexpr auto rtsp_version_len = strlen(rtsp_version);
+static constexpr auto rtsp_prefix_up = "RTSP://";
+static constexpr auto rtsp_prefix_lo = "rtsp://";
+static constexpr auto rtsp_prefix_len = strlen(rtsp_prefix_up);
 
-  return ((!memcmp(data, method_up, method_len) || !memcmp(data, method_lo, method_len)) &&
-          (!memcmp(data + method_len + 1, "RTSP://", 7) || !memcmp(data + method_len + 1, "rtsp://", 7)));
+static inline bool SearchRtspMethod(char *data, const char *method) {
+  const size_t method_len = strlen(method);
+  // Method type
+  for (size_t i = 0; i < method_len; ++i) {
+    if (*data++ != method[i]) {
+      return false;
+    }
+  }
+  // Space
+  if (*data++ != ' ') {
+    return false;
+  }
+  // Protocol prefix
+  for (size_t i = 0; i < rtsp_prefix_len; ++i) {
+    if (*data != rtsp_prefix_up[i]) {
+      if (*data != rtsp_prefix_lo[i]) {
+        return false;
+      }
+    }
+    ++data;
+  }
+
+  return true;
 }
 
 protocol_type SearchRtsp(rte_mbuf *m) {
   const uint16_t headers_len = m->l2_len + m->l3_len + m->l4_len;
   const uint16_t payload_len = m->pkt_len - headers_len;
-  // minimum 15 bytes
-  constexpr uint8_t rtsp_min_len = 15;
   if (payload_len < rtsp_min_len) return UNKNOWN;
 
-  uint8_t *payload = rte_pktmbuf_mtod_offset(m, uint8_t *, headers_len);
+  char *payload = rte_pktmbuf_mtod_offset(m, char *, headers_len);
 
   // Response case
-  if (!memcmp(payload, "RTSP/1.0", 8) || !memcmp(payload, "rtsp/1.0", 8)) {
+  bool response = true;
+  char *tmp_payload = payload;
+  for (size_t i = 0; i < rtsp_version_len; ++i) {
+    if (*tmp_payload++ != rtsp_version[i]) {
+      response = false;
+      break;
+    }
+  }
+  if (response) {
     return RTSP;
   }
 
   // Methods
-  if (SearchRtspMethod(payload, "DESCRIBE", "describe")) return RTSP;
-  if (SearchRtspMethod(payload, "OPTIONS", "options")) return RTSP;
-  if (SearchRtspMethod(payload, "PLAY", "play")) return RTSP;
-  if (SearchRtspMethod(payload, "PAUSE", "pause")) return RTSP;
-  if (SearchRtspMethod(payload, "RECORD", "record")) return RTSP;
-  if (SearchRtspMethod(payload, "REDIRECT", "redirect")) return RTSP;
-  if (SearchRtspMethod(payload, "SETUP", "setup")) return RTSP;
-  if (SearchRtspMethod(payload, "ANNOUNCE", "announce")) return RTSP;
-  if (SearchRtspMethod(payload, "GET_PARAMETER", "get_parameter")) return RTSP;
-  if (SearchRtspMethod(payload, "SET_PARAMETER", "set_parameter")) return RTSP;
-  if (SearchRtspMethod(payload, "TEARDOWN", "teardown")) return RTSP;
+  if (SearchRtspMethod(payload, "DESCRIBE")) return RTSP;
+  if (SearchRtspMethod(payload, "OPTIONS")) return RTSP;
+  if (SearchRtspMethod(payload, "PLAY")) return RTSP;
+  if (SearchRtspMethod(payload, "PAUSE")) return RTSP;
+  if (SearchRtspMethod(payload, "RECORD")) return RTSP;
+  if (SearchRtspMethod(payload, "REDIRECT")) return RTSP;
+  if (SearchRtspMethod(payload, "SETUP")) return RTSP;
+  if (SearchRtspMethod(payload, "ANNOUNCE")) return RTSP;
+  if (SearchRtspMethod(payload, "GET_PARAMETER")) return RTSP;
+  if (SearchRtspMethod(payload, "SET_PARAMETER")) return RTSP;
+  if (SearchRtspMethod(payload, "TEARDOWN")) return RTSP;
 
   return UNKNOWN;
 }

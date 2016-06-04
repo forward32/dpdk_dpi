@@ -11,6 +11,7 @@
 
 \usepackage{multirow}
 \usepackage{amsmath}
+\usepackage{longtable}
 
 % Полезные макросы листингов.
 \include{macros.inc}
@@ -28,29 +29,29 @@
 
 \include{00-abstract}
 
-\tableofcontents
-
 \include{10-defines}
 \include{11-abbrev}
+
+\tableofcontents
 
 \include{12-intro}
 
 \mainmatter % это включает нумерацию глав и секций в документе ниже
 
-%\include{20-analysis}
-%\include{30-design}
-%\include{40-impl}
+\include{20-analysis}
+\include{30-design}
+\include{40-impl}
+\include{50-economic}
 \include{60-ecology}
 
 \backmatter %% Здесь заканчивается нумерованная часть документа и начинаются ссылки и
             %% заключение
 
-%\include{80-conclusion}
+\include{80-conclusion}
 
 \include{81-biblio}
 
-\appendix   % Тут идут приложения
-q
+%\appendix   % Тут идут приложения
 %\include{90-appendix1}
 %\include{91-appendix2}
 

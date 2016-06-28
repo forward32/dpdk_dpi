@@ -18,7 +18,7 @@ include_directories(
 link_directories($ENV{RTE_SDK}/${DPDK_RTE_TARGET}/lib)
 
 set(DPDK_DRIVERS
-  "-lrte_pmd_vmxnet3_uio -lrte_pmd_pcap"
+  "-lrte_pmd_ixgbe -lrte_pmd_vmxnet3_uio -lrte_pmd_pcap"
   )
 
 set(DPDK_LIBS
